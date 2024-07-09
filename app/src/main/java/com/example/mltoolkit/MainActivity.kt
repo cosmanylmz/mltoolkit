@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.app.ActivityCompat
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.example.mltoolkit.ui.theme.TextRecognitionTheme
 import java.util.concurrent.ExecutorService
@@ -25,12 +25,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } else {
-            ActivityCompat.requestPermissions(
-                this,
-                REQUIRED_PERMISSIONS,
-                REQUEST_CODE_PERMISSIONS
-            )
+            requestPermissions()
         }
+    }
+
+    private fun requestPermissions() {
+        val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+            if (permissions.all { it.value }) {
+                setContent {
+                    TextRecognitionTheme {
+                        MyApp(cameraExecutor)
+                    }
+                }
+            }
+        }
+        permissionLauncher.launch(REQUIRED_PERMISSIONS)
     }
 
     override fun onDestroy() {
@@ -45,7 +54,6 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val REQUEST_CODE_PERMISSIONS = 10
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
     }
 }
