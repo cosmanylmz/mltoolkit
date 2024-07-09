@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         if (allPermissionsGranted()) {
             setContent {
                 TextRecognitionTheme {
-                    MyApp(cameraExecutor)
+                    AppContent(cameraExecutor)
                 }
             }
         } else {
@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
             if (permissions.all { it.value }) {
                 setContent {
                     TextRecognitionTheme {
-                        MyApp(cameraExecutor)
+                        AppContent(cameraExecutor)
                     }
                 }
             }
