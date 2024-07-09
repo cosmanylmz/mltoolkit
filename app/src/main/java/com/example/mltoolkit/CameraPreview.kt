@@ -1,5 +1,6 @@
 package com.example.mltoolkit
 
+import android.graphics.Rect
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
@@ -17,6 +18,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.concurrent.ExecutorService
@@ -42,7 +44,12 @@ fun CameraPreview(cameraExecutor: ExecutorService, onTextRecognized: (String) ->
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor) { imageProxy ->
-                        processImageProxy(imageProxy, onTextRecognized)
+                        try {
+                            processImageProxy(imageProxy, onTextRecognized)
+                        } catch (e: Exception) {
+                            Log.e("CameraPreview", "Image analysis failed", e)
+                            imageProxy.close()
+                        }
                     }
                 }
 
@@ -64,15 +71,34 @@ private fun processImageProxy(imageProxy: ImageProxy, onTextRecognized: (String)
     val mediaImage = imageProxy.image
     if (mediaImage != null) {
         val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+
+        // Sarı dikdörtgen alanın koordinatları
+        val boundingBox = Rect(
+            (mediaImage.width * 0.1).toInt(),  // Sol
+            (mediaImage.height * 0.5).toInt(), // Üst
+            (mediaImage.width * 0.9).toInt(),  // Sağ
+            (mediaImage.height * 0.9).toInt()  // Alt
+        )
+
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                onTextRecognized(visionText.text)
+                val filteredText = filterTextByBoundingBox(visionText, boundingBox)
+                onTextRecognized(filteredText)
                 imageProxy.close()
             }
             .addOnFailureListener { e ->
                 Log.e("processImageProxy", "Text recognition failed", e)
                 imageProxy.close()
             }
+    } else {
+        imageProxy.close()
     }
+}
+
+private fun filterTextByBoundingBox(visionText: Text, boundingBox: Rect): String {
+    val filteredBlocks = visionText.textBlocks.filter { block ->
+        block.boundingBox?.let { boundingBox.contains(it) } == true
+    }
+    return filteredBlocks.joinToString("\n") { it.text }
 }

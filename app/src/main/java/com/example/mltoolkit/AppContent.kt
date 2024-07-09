@@ -1,5 +1,6 @@
 package com.example.mltoolkit
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,7 +42,8 @@ fun MainScreen(navController: NavHostController, cameraExecutor: ExecutorService
         ) {
             if (isCameraStarted) {
                 CameraPreview(cameraExecutor) { text ->
-                    navController.navigate("resultScreen/$text")
+                    val encodedText = Uri.encode(text)
+                    navController.navigate("resultScreen/$encodedText")
                 }
             } else {
                 Button(onClick = { isCameraStarted = true }) {
